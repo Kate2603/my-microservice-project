@@ -4,3 +4,11 @@
 
 # Python virtual env
 .venv/
+
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+crash.log
+crash.*.log
