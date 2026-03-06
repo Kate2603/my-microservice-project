@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "django-app.fullname" . }}-config
+data:
+  DEBUG: {{ .Values.config.DEBUG | quote }}
+  ALLOWED_HOSTS: {{ .Values.config.ALLOWED_HOSTS | quote }}
+  DJANGO_SETTINGS_MODULE: {{ .Values.config.DJANGO_SETTINGS_MODULE | quote }}
+  SECRET_KEY: {{ .Values.config.SECRET_KEY | quote }}
+  DB_NAME: {{ .Values.config.DB_NAME | quote }}
+  DB_USER: {{ .Values.config.DB_USER | quote }}
+  DB_PASSWORD: {{ .Values.config.DB_PASSWORD | quote }}
+  DB_HOST: {{ .Values.config.DB_HOST | quote }}
+  DB_PORT: {{ .Values.config.DB_PORT | quote }}

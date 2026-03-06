@@ -1,10 +1,13 @@
-
-# Python virtual env
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 .venv/
+env/
+venv/
 
-# Python virtual env
-.venv/
-
+# Terraform
 .terraform/
 **/.terraform/
 *.tfstate
@@ -12,3 +15,15 @@
 .terraform.lock.hcl
 crash.log
 crash.*.log
+
+# Docker
+*.log
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
