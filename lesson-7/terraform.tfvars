@@ -1,0 +1,13 @@
+aws_region          = "us-west-2"
+project_name        = "lesson-7"
+environment         = "dev"
+vpc_state_bucket    = "kate-tf-state-bucket"
+vpc_state_key       = "lesson-5/terraform.tfstate"
+vpc_state_region    = "eu-central-1"
+ecr_repository_name = "lesson-7-django-app"
+cluster_name        = "lesson-7-eks-cluster"
+node_group_name     = "lesson-7-node-group"
+instance_types      = ["t3.medium"]
+desired_size        = 2
+min_size            = 2
+max_size            = 3
