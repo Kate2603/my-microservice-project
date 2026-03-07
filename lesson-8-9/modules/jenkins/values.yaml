@@ -1,0 +1,40 @@
+controller:
+  admin:
+    username: admin
+    password: admin123456
+
+  serviceType: LoadBalancer
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+    - credentials
+    - ssh-credentials
+    - plain-credentials
+
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+  JCasC:
+    defaultConfig: true
+    configScripts:
+      welcome-message: |
+        jenkins:
+          systemMessage: "Jenkins lesson-8-9 CI/CD pipeline"
+
+agent:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: jenkins
+
+persistence:
+  enabled: false
