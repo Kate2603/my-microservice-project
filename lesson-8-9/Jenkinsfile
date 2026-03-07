@@ -108,12 +108,12 @@ EOF
         container('kaniko') {
           sh '''
             /kaniko/executor \
-              --context "${WORKSPACE}" \
-              --dockerfile "${WORKSPACE}/Dockerfile" \
-              --destination "${IMAGE_REPO}:${IMAGE_TAG}" \
-              --destination "${IMAGE_REPO}:latest" \
-              --cache=true
-          '''
+            --context "${WORKSPACE}/lesson-4/docker_django_project" \
+            --dockerfile "${WORKSPACE}/lesson-4/docker_django_project/Dockerfile" \
+            --destination "${IMAGE_REPO}:${IMAGE_TAG}" \
+            --destination "${IMAGE_REPO}:latest" \
+            --cache=true
+        '''
         }
       }
     }
