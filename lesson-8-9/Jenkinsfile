@@ -44,12 +44,12 @@ spec:
   }
 
   environment {
-  AWS_REGION         = 'us-west-2'
-  ECR_REPOSITORY     = 'lesson-8-9-django'
-  GITOPS_REPO        = 'https://github.com/Kate2603/django-gitops.git'
-  GITOPS_BRANCH      = 'main'
-  GITOPS_VALUES_FILE = 'charts/django-app/values.yaml'
-}
+    AWS_REGION         = 'us-west-2'
+    ECR_REPOSITORY     = 'lesson-8-9-django'
+    GITOPS_REPO        = 'https://github.com/Kate2603/django-gitops.git'
+    GITOPS_BRANCH      = 'main'
+    GITOPS_VALUES_FILE = 'charts/django-app/values.yaml'
+  }
 
   stages {
     stage('Checkout App Repo') {
@@ -62,10 +62,11 @@ spec:
       steps {
         script {
           container('git') {
-            env.IMAGE_TAG = sh(
-              script: 'git rev-parse --short HEAD',
-              returnStdout: true
-            ).trim()
+            sh '''
+              git config --global --add safe.directory "${WORKSPACE}"
+              git rev-parse --short HEAD > /tmp/image_tag.txt
+            '''
+            env.IMAGE_TAG = sh(script: 'cat /tmp/image_tag.txt', returnStdout: true).trim()
           }
 
           container('aws') {
@@ -125,6 +126,8 @@ EOF
               rm -rf /tmp/gitops
               git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Kate2603/django-gitops.git /tmp/gitops
               cd /tmp/gitops
+
+              git config --global --add safe.directory /tmp/gitops
               git checkout ${GITOPS_BRANCH}
 
               sed -i "s|repository: .*|repository: ${IMAGE_REPO}|" ${GITOPS_VALUES_FILE}
