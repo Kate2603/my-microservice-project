@@ -27,3 +27,9 @@ crash.*.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Terraform local files
+tfplan
+tfplan2
+terraform.tfvars
+*.auto.tfvars

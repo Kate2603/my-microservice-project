@@ -1,0 +1,45 @@
+replicaCount: 2
+
+image:
+  repository: 123456789012.dkr.ecr.us-west-2.amazonaws.com/final-django-app
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+
+config:
+  DEBUG: "False"
+  ALLOWED_HOSTS: "*"
+  DJANGO_SETTINGS_MODULE: "app.settings"
+  SECRET_KEY: "django-insecure-change-me"
+  DB_NAME: "appdb"
+  DB_USER: "dbadmin"
+  DB_PASSWORD: "ChangeMe123456!"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: false
+  className: nginx
+  host: example.com
+  path: /
+  pathType: Prefix
+  tls: false
+  clusterIssuer: letsencrypt-prod
