@@ -1,0 +1,10 @@
+applications:
+  - name: django-app
+    namespace: default
+    project: default
+    repoURL: ${gitops_repo_url}
+    targetRevision: ${gitops_repo_branch}
+    path: ${gitops_repo_path}
+    server: https://kubernetes.default.svc
+    prune: true
+    selfHeal: true

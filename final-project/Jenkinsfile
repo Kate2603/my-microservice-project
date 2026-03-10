@@ -1,0 +1,163 @@
+pipeline {
+  agent {
+    kubernetes {
+      label 'kaniko-agent'
+      defaultContainer 'git'
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: kaniko-agent
+spec:
+  serviceAccountName: jenkins
+  containers:
+    - name: git
+      image: alpine/git:2.45.2
+      command:
+        - cat
+      tty: true
+      volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
+
+    - name: aws
+      image: amazon/aws-cli:2.17.24
+      command:
+        - cat
+      tty: true
+      volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
+
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug
+      command:
+        - /busybox/cat
+      tty: true
+      volumeMounts:
+        - name: docker-config
+          mountPath: /kaniko/.docker
+  volumes:
+    - name: docker-config
+      emptyDir: {}
+"""
+    }
+  }
+
+  environment {
+    AWS_REGION         = 'us-west-2'
+    ECR_REPOSITORY     = 'final-django-app'
+    GITOPS_REPO        = 'https://github.com/Kate2603/django-gitops.git'
+    GITOPS_BRANCH      = 'main'
+    GITOPS_VALUES_FILE = 'charts/django-app/values.yaml'
+    APP_DIR            = 'Django'
+  }
+
+  stages {
+    stage('Checkout App Repo') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Prepare Metadata') {
+      steps {
+        script {
+          container('git') {
+            sh '''
+              git config --global --add safe.directory "${WORKSPACE}"
+              git rev-parse --short HEAD > /tmp/image_tag.txt
+            '''
+            env.IMAGE_TAG = sh(script: 'cat /tmp/image_tag.txt', returnStdout: true).trim()
+          }
+
+          container('aws') {
+            env.AWS_ACCOUNT_ID = sh(
+              script: 'aws sts get-caller-identity --query Account --output text',
+              returnStdout: true
+            ).trim()
+          }
+
+          env.ECR_REGISTRY = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
+          env.IMAGE_REPO   = "${env.ECR_REGISTRY}/${env.ECR_REPOSITORY}"
+        }
+      }
+    }
+
+    stage('Login to ECR') {
+      steps {
+        container('aws') {
+          sh '''
+            PASSWORD=$(aws ecr get-login-password --region "${AWS_REGION}")
+            AUTH=$(printf "AWS:%s" "$PASSWORD" | base64 | tr -d '\\n')
+
+            mkdir -p /kaniko/.docker
+
+            cat > /kaniko/.docker/config.json <<EOFJSON
+{
+  "auths": {
+    "${ECR_REGISTRY}": {
+      "auth": "${AUTH}"
+    }
+  }
+}
+EOFJSON
+          '''
+        }
+      }
+    }
+
+    stage('Build and Push Image') {
+      steps {
+        container('kaniko') {
+          sh '''
+            /kaniko/executor \
+              --context "${WORKSPACE}/${APP_DIR}" \
+              --dockerfile "${WORKSPACE}/${APP_DIR}/Dockerfile" \
+              --destination "${IMAGE_REPO}:${IMAGE_TAG}" \
+              --destination "${IMAGE_REPO}:latest" \
+              --cache=true
+          '''
+        }
+      }
+    }
+
+    stage('Update GitOps Repo') {
+      steps {
+        container('git') {
+          withCredentials([usernamePassword(credentialsId: 'github-https-creds', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+            sh '''
+              rm -rf /tmp/gitops
+
+              git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Kate2603/django-gitops.git /tmp/gitops
+              cd /tmp/gitops
+
+              git config --global --add safe.directory /tmp/gitops
+              git checkout "${GITOPS_BRANCH}"
+
+              sed -i "s|repository: .*|repository: ${IMAGE_REPO}|" "${GITOPS_VALUES_FILE}"
+              sed -i "s|tag: .*|tag: \\\"${IMAGE_TAG}\\\"|" "${GITOPS_VALUES_FILE}"
+
+              git config user.email "jenkins@local"
+              git config user.name "Jenkins"
+
+              git add "${GITOPS_VALUES_FILE}"
+              git commit -m "ci: update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
+              git push origin "${GITOPS_BRANCH}"
+            '''
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'Pipeline completed successfully'
+    }
+    failure {
+      echo 'Pipeline failed'
+    }
+  }
+}

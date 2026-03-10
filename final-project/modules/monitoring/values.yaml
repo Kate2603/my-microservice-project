@@ -1,0 +1,8 @@
+grafana:
+  service:
+    type: ClusterIP
+  adminPassword: admin123456
+
+prometheus:
+  service:
+    type: ClusterIP
